@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0a0a0a;--surface:#111;--surface2:#181818;--border:#222;--accent:#c8f135;--accent2:#f1c135;--red:#ff4545;--muted:#555;--text:#e8e8e8;--text2:#999}
+.light{--bg:#f4f4f0;--surface:#ffffff;--surface2:#ebebeb;--border:#d0d0d0;--muted:#888;--text:#111111;--text2:#555555}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh}
 header{padding:40px 40px 0;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:100}
@@ -97,7 +98,23 @@ main{padding:32px 40px;max-width:1400px;margin:0 auto}
 .hot .modal-status-text{color:var(--accent)}
 .warm .modal-status-text{color:var(--accent2)}
 .cold .modal-status-text{color:var(--red)}
-@media(max-width:600px){header{padding:24px 20px 0}main{padding:24px 20px}.studio-name{font-size:40px}.client-grid{grid-template-columns:1fr}.header-stats{display:none}.modal{max-width:100%}.modal-stats{grid-template-columns:1fr 1fr}}
+/* Theme toggle */
+.theme-toggle{background:var(--surface);border:1px solid var(--border);color:var(--text2);width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0}
+.theme-toggle:hover{border-color:var(--muted);color:var(--text)}
+/* Home screen */
+#homeScreen{padding:48px 0}
+.home-heading{font-family:'Bebas Neue',sans-serif;font-size:clamp(28px,4vw,42px);letter-spacing:3px;color:var(--text2);margin-bottom:8px}
+.home-sub{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:40px}
+.eng-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;max-width:900px}
+.eng-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:28px 24px;cursor:pointer;transition:border-color .2s,transform .15s,background .2s;display:flex;flex-direction:column;gap:10px}
+.eng-card:hover{border-color:var(--accent);transform:translateY(-3px);background:var(--surface2)}
+.eng-card-name{font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:2px;color:var(--accent);line-height:1}
+.eng-card-clients{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:2px;text-transform:uppercase}
+.eng-card-sessions{font-family:'DM Mono',monospace;font-size:11px;color:var(--text2);letter-spacing:1px}
+/* Back button */
+.back-btn{background:none;border:1px solid var(--border);color:var(--muted);padding:7px 16px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1px;border-radius:4px;cursor:pointer;text-transform:uppercase;transition:all .2s;display:inline-flex;align-items:center;gap:6px}
+.back-btn:hover{border-color:var(--muted);color:var(--text)}
+@media(max-width:600px){header{padding:24px 20px 0}main{padding:24px 20px}.studio-name{font-size:40px}.client-grid{grid-template-columns:1fr}.header-stats{display:none}.modal{max-width:100%}.modal-stats{grid-template-columns:1fr 1fr}.eng-grid{grid-template-columns:1fr 1fr}}
 ::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 </style>
 </head>
@@ -108,15 +125,25 @@ main{padding:32px 40px;max-width:1400px;margin:0 auto}
       <div class="studio-name">Studio 22</div>
       <div class="studio-sub">Engineer Client Roster &nbsp;&middot;&nbsp; As of Mar 16, 2026</div>
     </div>
-    <div class="header-stats">
-      <div class="stat"><div class="stat-num">5</div><div class="stat-label">Engineers</div></div>
-      <div class="stat"><div class="stat-num">422</div><div class="stat-label">Clients Mapped</div></div>
-      <div class="stat"><div class="stat-num">1,557</div><div class="stat-label">Sessions Total</div></div>
+    <div style="display:flex;align-items:center;gap:20px">
+      <div class="header-stats">
+        <div class="stat"><div class="stat-num">5</div><div class="stat-label">Engineers</div></div>
+        <div class="stat"><div class="stat-num">422</div><div class="stat-label">Clients Mapped</div></div>
+        <div class="stat"><div class="stat-num">1,557</div><div class="stat-label">Sessions Total</div></div>
+      </div>
+      <button class="theme-toggle" id="themeToggle" title="Toggle light/dark mode">&#9790;</button>
     </div>
   </div>
   <nav class="nav-tabs" id="navTabs"></nav>
 </header>
-<main><div id="panels"></div></main>
+<main>
+  <div id="homeScreen">
+    <div class="home-heading">Select Your Name</div>
+    <div class="home-sub">Internal Use Only — Studio 22</div>
+    <div class="eng-grid" id="engGrid"></div>
+  </div>
+  <div id="panels" style="display:none"></div>
+</main>
 <div class="modal-overlay" id="overlay">
   <div class="modal">
     <div class="modal-header">
@@ -191,10 +218,33 @@ document.addEventListener('DOMContentLoaded',function(){
   document.getElementById('mClose').addEventListener('click',closeModal);
   document.getElementById('overlay').addEventListener('click',function(e){if(e.target===this)closeModal();});
   document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal();});
+  // Theme toggle
+  var toggle=document.getElementById('themeToggle');
+  function applyTheme(light){
+    document.body.classList.toggle('light',light);
+    toggle.textContent=light?'\u2600':'\u263D';
+    toggle.title=light?'Switch to dark mode':'Switch to light mode';
+    localStorage.setItem('s22theme',light?'light':'dark');
+  }
+  var saved=localStorage.getItem('s22theme');
+  applyTheme(saved==='light');
+  toggle.addEventListener('click',function(){applyTheme(!document.body.classList.contains('light'));});
   buildUI();
 });
-var aEng='Steven',aFilt='all',aQ='';
+var aEng=null,aFilt='all',aQ='';
 function buildUI(){
+  // Build home engineer cards
+  var egrid=document.getElementById('engGrid');
+  Object.keys(DATA).forEach(function(eng){
+    var card=document.createElement('div');
+    card.className='eng-card';
+    card.innerHTML=
+      '<div class="eng-card-name">'+eng+'</div>'+
+      '<div class="eng-card-clients">'+DATA[eng].total_clients+' Clients</div>'+
+      '<div class="eng-card-sessions">'+DATA[eng].total_sessions+' Sessions</div>';
+    card.addEventListener('click',function(){switchEng(eng);});
+    egrid.appendChild(card);
+  });
   var nav=document.getElementById('navTabs');
   Object.keys(DATA).forEach(function(eng){
     var b=document.createElement('button');
@@ -204,6 +254,14 @@ function buildUI(){
     b.addEventListener('click',function(){switchEng(eng);});
     nav.appendChild(b);
   });
+  // Add home button to nav
+  var homeBtn=document.createElement('button');
+  homeBtn.className='nav-tab';
+  homeBtn.id='homeNavBtn';
+  homeBtn.innerHTML='&#8592; Home';
+  homeBtn.style.display='none';
+  homeBtn.addEventListener('click',showHome);
+  nav.insertBefore(homeBtn,nav.firstChild);
   var wrap=document.getElementById('panels');
   Object.keys(DATA).forEach(function(eng){
     var d=DATA[eng],eid=eng.replace(/ /g,'_');
@@ -244,7 +302,16 @@ function buildUI(){
       });
     });
   });
-  renderGrid(aEng);
+  // Start on home screen
+  showHome();
+}
+function showHome(){
+  aEng=null; aFilt='all'; aQ='';
+  document.getElementById('homeScreen').style.display='';
+  document.getElementById('panels').style.display='none';
+  document.querySelectorAll('.nav-tab').forEach(function(t){t.classList.remove('active');});
+  var hb=document.getElementById('homeNavBtn');
+  if(hb)hb.style.display='none';
 }
 function renderGrid(eng){
   var eid=eng.replace(/ /g,'_');
@@ -285,6 +352,10 @@ function renderGrid(eng){
 }
 function switchEng(eng){
   aEng=eng; aFilt='all'; aQ='';
+  document.getElementById('homeScreen').style.display='none';
+  document.getElementById('panels').style.display='';
+  var hb=document.getElementById('homeNavBtn');
+  if(hb)hb.style.display='';
   var eid=eng.replace(/ /g,'_');
   var sb=document.getElementById('s-'+eid);
   if(sb)sb.value='';
